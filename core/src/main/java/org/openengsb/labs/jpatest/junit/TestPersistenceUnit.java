@@ -16,12 +16,14 @@
  */
 package org.openengsb.labs.jpatest.junit;
 
+import org.h2.tools.Server;
 import org.junit.rules.MethodRule;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
 
 import javax.persistence.*;
 import javax.persistence.metamodel.ManagedType;
+import java.sql.SQLException;
 import java.util.*;
 
 public class TestPersistenceUnit implements MethodRule {
@@ -41,7 +43,7 @@ public class TestPersistenceUnit implements MethodRule {
         return emf.createEntityManager(emProperties);
     }
 
-    private EntityManagerFactory makeEntityManagerFactory(String s) {
+    private EntityManagerFactory makeEntityManagerFactory(String s) throws SQLException {
         Properties props = new Properties();
         props.put("openjpa.ConnectionURL", String.format("jdbc:h2:mem:%s;DB_CLOSE_DELAY=-1", s));
         props.put("openjpa.ConnectionDriverName", "org.h2.Driver");
@@ -51,10 +53,11 @@ public class TestPersistenceUnit implements MethodRule {
                 "buildSchema(SchemaAction='add')");
         props.put("openjpa.ConnectionRetainMode", "always");
         props.put("openjpa.ConnectionFactoryMode", "local");
-        return Persistence.createEntityManagerFactory(s, props);
+        EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory(s, props);
+        return entityManagerFactory;
     }
 
-    public EntityManager getEntityManager(String s) {
+    public EntityManager getEntityManager(String s) throws SQLException {
         EntityManagerFactory entityManagerFactory = getEntityManagerFactory(s);
         usedPersistenceUnits.add(entityManagerFactory);
         EntityManager entityManager = makeEntityManager(entityManagerFactory);
@@ -62,7 +65,7 @@ public class TestPersistenceUnit implements MethodRule {
         return entityManager;
     }
 
-    private EntityManagerFactory getEntityManagerFactory(String s) {
+    private EntityManagerFactory getEntityManagerFactory(String s) throws SQLException {
         if (!emCache.containsKey(s)) {
             emCache.put(s, makeEntityManagerFactory(s));
         }
@@ -79,6 +82,7 @@ public class TestPersistenceUnit implements MethodRule {
 
         @Override
         public void evaluate() throws Throwable {
+            Server server = Server.createTcpServer().start();
             parent.evaluate();
             for (EntityManager e : createdEntityManagers) {
                 if(e.getTransaction().isActive()) {
@@ -91,6 +95,7 @@ public class TestPersistenceUnit implements MethodRule {
             for (EntityManagerFactory emf : usedPersistenceUnits) {
                 clearTables(emf);
             }
+            server.stop();
         }
 
         private void clearTables(EntityManagerFactory emf) {
