@@ -33,6 +33,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
@@ -62,12 +63,20 @@ public class UseInMavenProjectsTest {
         handler.start();
         handler.waitForLineInOutput("ACCEPTING CONNECTION");
         Class.forName("org.h2.Driver");
-        Connection conn = DriverManager.getConnection("jdbc:h2:tcp://localhost/mem:remote;DB_CLOSE_DELAY=-1");
+        String port = readPortFromProperties();
+        Connection conn = DriverManager.getConnection("jdbc:h2:tcp://localhost:" + port + "/mem:remote;DB_CLOSE_DELAY=-1");
         Statement statement = conn.createStatement();
         statement.execute("SELECT * FROM TESTMODEL");
         ResultSet resultSet = statement.getResultSet();
         resultSet.last();
         assertThat(resultSet.getRow(), is(1));
+    }
+
+    private String readPortFromProperties() throws IOException {
+        InputStream stream = ClassLoader.getSystemResourceAsStream("projects/good/remote-project/src/test/resources/ports.properties");
+        Properties properties = new Properties();
+        properties.load(stream);
+        return (String) properties.get("h2.tcp.port");
     }
 
     private class MavenProcessHandler {

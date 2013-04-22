@@ -19,15 +19,11 @@ package org.openengsb.labs.jpatest.remote;
 import org.junit.Rule;
 import org.junit.Test;
 import org.openengsb.labs.jpatest.junit.TestPersistenceUnit;
-import org.openengsb.labs.jpatest.remote.TestModel;
 
 import javax.persistence.EntityManager;
-
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
 /**
  * Unit test for simple App.
@@ -35,8 +31,10 @@ import static org.junit.Assert.assertThat;
 public class RemoteTest {
 
     @Rule
-    public TestPersistenceUnit persistenceXml = new TestPersistenceUnit();
-
+    public TestPersistenceUnit persistenceXml = new TestPersistenceUnit(TestPersistenceUnit.readPortFromStream(
+            ClassLoader.getSystemResourceAsStream("ports.properties"),
+            "h2.tcp.port"
+    ));
 
     @Test
     public void testApp() throws Exception {
