@@ -53,8 +53,7 @@ public class TestPersistenceUnit implements MethodRule {
                 "buildSchema(SchemaAction='add')");
         props.put("openjpa.ConnectionRetainMode", "always");
         props.put("openjpa.ConnectionFactoryMode", "local");
-        EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory(s, props);
-        return entityManagerFactory;
+        return Persistence.createEntityManagerFactory(s, props);
     }
 
     public EntityManager getEntityManager(String s) throws SQLException {
